@@ -157,7 +157,7 @@ const getStats = (options: RendererOptions): Promise<Chunks> => {
 
 let chunksUnderstand;
 
-const render = (response, head, stream, tail) =>
+const render = (response, head, stream: NodeJS.ReadableStream, tail) =>
   new Promise<void>((resolve, reject) => {
     stream.on('error', reject);
     stream.once('readable', () => {
@@ -226,7 +226,9 @@ const html: Renderer = async (context, App, { bundles, options }) => {
   return render(
     context.ctx.res,
     renderBefore(renderPayload),
-    ReactDOMServer.renderToPipeableStream(React.createElement(App, { context })),
+    ReactDOMServer.renderToStaticNodeStream(
+      React.createElement(App, { context }),
+    ),
     renderAfter(renderPayload),
   );
 };
