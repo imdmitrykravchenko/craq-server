@@ -168,9 +168,8 @@ const render = (response, head, stream: NodeJS.ReadableStream, tail) =>
       stream.on('end', () => {
         response.write(tail);
         response.end();
+        resolve();
       });
-
-      resolve();
     });
   });
 
