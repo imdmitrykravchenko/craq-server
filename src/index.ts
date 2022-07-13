@@ -60,8 +60,10 @@ export const createCraqServer = (
                     {},
                   );
                 },
-                ({ code, message }) => {
-                  context.stats.error = { code, message };
+                (error) => {
+                  context.stats.error = error;
+
+                  return error;
                 },
               )
               .then(next),
