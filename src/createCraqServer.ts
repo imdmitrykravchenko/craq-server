@@ -21,7 +21,11 @@ const createCraqServer = <
   O extends {
     renderers: Record<
       string,
-      (context: ServerContext<T>, app: A, options: Omit<O, 'renderers'>) => any
+      (
+        context: ServerContext<T, any>,
+        app: A,
+        options: Omit<O, 'renderers'>,
+      ) => any
     >;
   },
 >(
