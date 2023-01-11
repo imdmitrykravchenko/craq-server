@@ -4,6 +4,7 @@ import { createRegistry } from 'craq';
 
 import createCraqServer from '../createCraqServer';
 import { configureContext, createRedirect, createHttpError } from '../index';
+import Router6 from 'router6';
 
 describe('createCraqServer', () => {
   const nope = (context, error) =>
@@ -31,54 +32,55 @@ describe('createCraqServer', () => {
   let httpServer;
   const server = createCraqServer(
     configureContext({
-      store: null,
+      getStore: () => null,
       actions,
       components: createRegistry(),
-      routes: [
-        {
-          name: 'home',
-          path: '/',
-          config: {
-            renderer: 'nope',
+      getRouter: () =>
+        new Router6([
+          {
+            name: 'home',
+            path: '/',
+            config: {
+              renderer: 'nope',
+            },
           },
-        },
-        {
-          name: 'redirect',
-          path: '/redirect',
-          config: {
-            renderer: 'nope',
-            actions: ['redirectAction'],
+          {
+            name: 'redirect',
+            path: '/redirect',
+            config: {
+              renderer: 'nope',
+              actions: ['redirectAction'],
+            },
           },
-        },
-        {
-          name: 'notFound',
-          path: '/not-found',
-          config: {
-            renderer: 'nope',
-            actions: ['notFound'],
+          {
+            name: 'notFound',
+            path: '/not-found',
+            config: {
+              renderer: 'nope',
+              actions: ['notFound'],
+            },
           },
-        },
-        {
-          name: 'badass',
-          path: '/badass',
-          config: {
-            renderer: 'nope',
-            actions: ['somethingBad'],
+          {
+            name: 'badass',
+            path: '/badass',
+            config: {
+              renderer: 'nope',
+              actions: ['somethingBad'],
+            },
           },
-        },
-        {
-          name: '404',
-          config: {
-            renderer: 'render404',
+          {
+            name: '404',
+            config: {
+              renderer: 'render404',
+            },
           },
-        },
-        {
-          name: '5xx',
-          config: {
-            renderer: 'render5xx',
+          {
+            name: '5xx',
+            config: {
+              renderer: 'render5xx',
+            },
           },
-        },
-      ],
+        ]),
     }),
     {
       renderers: { nope, render404, render5xx },

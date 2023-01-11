@@ -66,7 +66,9 @@ const createCraqServer = <S extends object, A>(
         getRenderer(renderers, route)(context, err);
 
       return context.router
-        .start(url.format({ pathname: ctx.path, query: ctx.query }))
+        .start(url.format({ pathname: ctx.path, query: ctx.query }), {
+          context,
+        })
         .then(renderRoute, (e) => {
           if (isRedirect(e)) {
             ctx.status = e.statusCode;

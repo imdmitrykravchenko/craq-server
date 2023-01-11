@@ -1,27 +1,27 @@
 import { Context } from 'koa';
-import Router6, { RouteDefinition } from 'router6';
+import Router6 from 'router6';
 import { CraqAction, Registry, Store } from 'craq';
 
 import ServerContext from './ServerContext';
 import { Head } from './createHead';
 
 export default <T, S>({
-    store,
+    getStore,
     actions,
     components,
-    routes,
+    getRouter,
   }: {
     actions: Registry<CraqAction<S, any>>;
     components: Registry<T>;
-    store: Store<S, any>;
-    routes: RouteDefinition[];
+    getStore: () => Store<S, any>;
+    getRouter: () => Router6;
   }) =>
   <T extends Context>(ctx: T, head: Head) =>
     new ServerContext(
       {
         ctx,
-        store,
-        router: new Router6(routes),
+        store: getStore(),
+        router: getRouter(),
         registries: { actions, components },
       },
       head,
