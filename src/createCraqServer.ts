@@ -91,7 +91,13 @@ const createCraqServer = <S extends object, A>(
           ctx.status = e.statusCode;
 
           if (errorRoute) {
-            return renderRoute(errorRoute, e);
+            return context.router
+              .navigateToRoute(errorRoute, { context })
+              .then(() => {
+                // @ts-ignore
+                context.router.started = true;
+                return renderRoute(errorRoute, e);
+              });
           }
 
           throw e;
