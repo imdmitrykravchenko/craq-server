@@ -66,7 +66,7 @@ const createCraqServer = <S extends object, A>(
         getRenderer(renderers, route)(context, err);
 
       return context.router
-        .start(url.format({ pathname: ctx.path, query: ctx.query }), {
+        .navigateToPath(url.format({ pathname: ctx.path, query: ctx.query }), {
           context,
         })
         .then(renderRoute, (e) => {
@@ -93,11 +93,7 @@ const createCraqServer = <S extends object, A>(
           if (errorRoute) {
             return context.router
               .navigateToRoute(errorRoute, { context })
-              .then(() => {
-                // @ts-ignore
-                context.router.started = true;
-                return renderRoute(errorRoute, e);
-              });
+              .then(() => renderRoute(errorRoute, e));
           }
 
           throw e;
