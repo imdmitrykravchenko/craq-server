@@ -1,102 +1,109 @@
 import url from 'url';
 import Koa, { Context } from 'koa';
-import { InternalServerError, Route } from 'router6';
+import { Route } from 'router6';
 import { actionsMiddleware } from 'craq';
-
 import ServerContext from './ServerContext';
 import createHead, { Head } from './createHead';
+import { isHttpError, isRedirect } from './errors';
+import createError from 'http-errors';
 
-const tryCatchMiddleware = async (ctx, next) => {
-  try {
-    return await next();
-  } catch (e) {
-    ctx.set('Content-Type', 'text/html');
-    ctx.body = `<h1>Internal server error</h1><pre>${e.stack}</pre>`;
+type Renderer<S> = (context: ServerContext<S, any>, error: Error | null) => any;
+
+const getRenderer = <T>(
+  renderers: Record<string, Renderer<T>>,
+  route: Route,
+) => {
+  const renderer = renderers[route.config.renderer];
+
+  if (!renderer) {
+    throw new Error(
+      `Renderer "${route.config.renderer}" was not found, check "${route.name}" route config`,
+    );
   }
+
+  return renderer;
 };
 
-const createCraqServer = <
-  A,
-  T extends object,
-  O extends {
-    renderers: Record<
-      string,
-      (
-        context: ServerContext<T, any>,
-        app: A,
-        options: Omit<O, 'renderers'>,
-      ) => any
-    >;
+const createCraqServer = <S extends object, A>(
+  createContext: <C extends Context>(
+    ctx: C,
+    head: Head,
+  ) => ServerContext<S, A, C>,
+  {
+    renderers,
+  }: {
+    renderers: Record<string, Renderer<S>>;
   },
->(
-  createContext: <C extends Context>(ctx: C, head: Head) => ServerContext<T, C>,
-  App: A,
-  { renderers, ...options }: O,
 ) => {
-  const server = new Koa();
-  server.use(tryCatchMiddleware);
+  const app = new Koa();
 
-  server.use(async (ctx) => {
+  app.use(async (ctx) => {
     if (ctx.path === '/favicon.ico') {
       // TODO: fix that mess
       return;
     }
 
-    const run = async (error = undefined) => {
+    const run = () => {
       const context = createContext(ctx, createHead());
-
-      if (error) {
-        context.stats.error = error;
-      }
 
       context.router.use(
         actionsMiddleware(context, {
-          isServer: true,
-          handleRoutingError: (e, next) => Promise.reject(next(e)),
-          executionFlow: (execution, next) =>
-            execution
-              .then(
-                (results) => {
-                  context.stats.actions = results.reduce(
-                    (result, action) => ({ ...result, ...action }),
-                    {},
-                  );
-                },
-                (error) => {
-                  context.stats.error = error;
-
-                  return error;
-                },
-              )
-              .then(next),
+          filter: ({ options }) => options?.clientOnly !== true,
+          onError: (error, { name }) => {
+            if (isHttpError(error) || isRedirect(error)) {
+              throw error;
+            }
+            context.stats.error = error;
+            context.stats.actions[name] = false;
+          },
+          onSuccess: ({ name }) => {
+            context.stats.actions[name] = true;
+          },
         }),
       );
 
-      const route: Route = await context.router.start(
-        url.format({ pathname: ctx.path, query: ctx.query }),
-        error,
-      );
-      const renderer = renderers[route.config.renderer];
+      const renderRoute = (route, err = null) =>
+        getRenderer(renderers, route)(context, err);
 
-      if (!renderer) {
-        throw new Error(
-          `Renderer "${route.config.renderer}" was not found, check "${route.name}" route config`,
-        );
-      }
+      return context.router
+        .start(url.format({ pathname: ctx.path, query: ctx.query }))
+        .then(renderRoute, (e) => {
+          if (isRedirect(e)) {
+            ctx.status = e.statusCode;
+            ctx.response.set('location', e.location);
+            return;
+          }
 
-      return renderer(context, App, options);
+          if (!isHttpError(e)) {
+            // assume it's 500
+            e = createError(500, e);
+          }
+
+          const params = { meta: { path: ctx.path } };
+          const stringStatusCode = String(e.statusCode);
+
+          const errorRoute =
+            context.router.findRoute(stringStatusCode, params) ||
+            context.router.findRoute(`${stringStatusCode.charAt(0)}xx`, params);
+
+          ctx.status = e.statusCode;
+
+          if (errorRoute) {
+            return renderRoute(errorRoute, e);
+          }
+
+          throw e;
+        });
     };
 
-    try {
-      return await run();
-    } catch (e) {
-      return await run(new InternalServerError(e.message));
-    }
+    return run().catch((e) => {
+      ctx.status = 500;
+      ctx.set('Content-Type', 'text/html');
+      ctx.body = `<h1>Internal server error</h1><pre>${e.stack}</pre>`;
+    });
   });
 
-  return {
-    listen: (port: number) => server.listen(port),
-  };
+  return app;
 };
 
 export default createCraqServer;

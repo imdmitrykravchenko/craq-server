@@ -6,8 +6,18 @@ import {
   ServerActionContext,
   ServerNavigateCraqAction,
 } from './types';
+import {
+  createHttpError,
+  isHttpError,
+  createRedirect,
+  isRedirect,
+} from './errors';
 
 export {
+  createHttpError,
+  isHttpError,
+  createRedirect,
+  isRedirect,
   createCraqServer,
   configureContext,
   ServerContext,
