@@ -26,7 +26,7 @@ export const createRedirect = (code: number, location: string) =>
 export const isRedirect = (error: any): error is Redirect =>
   error instanceof Error &&
   // @ts-ignore
-  messageByCode[error.statusCode] &&
+  Boolean(messageByCode[error.statusCode]) &&
   // @ts-ignore
   typeof error.location === 'string';
 

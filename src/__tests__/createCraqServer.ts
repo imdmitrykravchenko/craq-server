@@ -9,7 +9,6 @@ import Router6 from 'router6';
 describe('createCraqServer', () => {
   const nope = (context, error) =>
     (context.ctx.body = error ? 'Not Okay' : 'Okay');
-
   const render404 = (context) => (context.ctx.body = 'I am 404');
   const render5xx = (context, error) => {
     context.ctx.body = error.message;
@@ -20,6 +19,9 @@ describe('createCraqServer', () => {
   const notFound = () => {
     throw createHttpError(404, 'Cannot find');
   };
+  const some500 = () => {
+    throw createHttpError(500, 'Clusterfuck');
+  };
   const somethingBad = () => {
     x + 2;
   };
@@ -28,6 +30,7 @@ describe('createCraqServer', () => {
   actions.register('redirectAction', redirectAction);
   actions.register('notFound', notFound);
   actions.register('somethingBad', somethingBad);
+  actions.register('some500', some500);
 
   let httpServer;
   const server = createCraqServer(
@@ -66,6 +69,14 @@ describe('createCraqServer', () => {
             config: {
               renderer: 'nope',
               actions: ['somethingBad'],
+            },
+          },
+          {
+            name: 'clusterfuck',
+            path: '/clusterfuck',
+            config: {
+              renderer: 'nope',
+              actions: ['some500'],
             },
           },
           {
@@ -109,13 +120,20 @@ describe('createCraqServer', () => {
   });
 
   it('404 works', async () => {
-    const response = await request(server.callback()).get('/notFound');
+    const response = await request(server.callback()).get('/not-found');
 
     expect(response.status).toBe(404);
     expect(response.text).toBe('I am 404');
   });
 
   it('500 works', async () => {
+    const response = await request(server.callback()).get('/clusterfuck');
+
+    expect(response.status).toBe(500);
+    expect(response.text).toBe('Clusterfuck');
+  });
+
+  it('unexpected 500 works', async () => {
     const response = await request(server.callback()).get('/badass');
 
     expect(response.status).toBe(500);

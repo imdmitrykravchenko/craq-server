@@ -50,11 +50,10 @@ const createCraqServer = <S extends object, A>(
         actionsMiddleware(context, {
           filter: ({ options }) => options?.clientOnly !== true,
           onError: (error, { name }) => {
-            if (isHttpError(error) || isRedirect(error)) {
-              throw error;
-            }
             context.stats.error = error;
             context.stats.actions[name] = false;
+
+            throw error;
           },
           onSuccess: ({ name }) => {
             context.stats.actions[name] = true;
