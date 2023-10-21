@@ -34,25 +34,29 @@ const formatAttributes = (attributes) =>
     .join(' ');
 
 const uniqMetaNames = new Set(['description', 'viewport']);
-
+const getInitialMeta = (): HeadMeta => ({
+  title: '',
+  base: '',
+  lang: '',
+  meta: [
+    {
+      name: 'viewport',
+      content:
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0',
+    },
+  ],
+  links: [],
+  scripts: [],
+  inlines: [],
+});
 const createHead = () => {
-  const headMeta: HeadMeta = {
-    title: '',
-    base: '',
-    lang: '',
-    meta: [
-      {
-        name: 'viewport',
-        content:
-          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0',
-      },
-    ],
-    links: [],
-    scripts: [],
-    inlines: [],
-  };
+  let headMeta: HeadMeta = getInitialMeta();
 
   const head = {
+    clear: () => {
+      headMeta = getInitialMeta();
+      return head;
+    },
     setTitle: (title: string) => {
       headMeta.title = title;
       return head;

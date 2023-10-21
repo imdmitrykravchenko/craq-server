@@ -4,8 +4,7 @@ import { Route } from 'router6';
 import { actionsMiddleware } from 'craq';
 import ServerContext from './ServerContext';
 import createHead, { Head } from './createHead';
-import { isHttpError, isRedirect } from './errors';
-import createError from 'http-errors';
+import { Redirect, HttpError, ServerError } from './errors';
 
 type Renderer<S> = (context: ServerContext<S, any>, error: Error | null) => any;
 
@@ -68,16 +67,16 @@ const createCraqServer = <S extends object, A>(
         .navigateToPath(url.format({ pathname: ctx.path, query: ctx.query }), {
           context,
         })
-        .then(renderRoute, (e) => {
-          if (isRedirect(e)) {
+        .then(renderRoute, async (e) => {
+          if (e instanceof Redirect) {
             ctx.status = e.statusCode;
             ctx.response.set('location', e.location);
             return;
           }
 
-          if (!isHttpError(e)) {
+          if (!(e instanceof HttpError)) {
             // assume it's 500
-            e = createError(500, e);
+            e = new ServerError(500, { message: e.message });
           }
 
           const params = { meta: { path: ctx.path } };
@@ -90,9 +89,13 @@ const createCraqServer = <S extends object, A>(
           ctx.status = e.statusCode;
 
           if (errorRoute) {
-            return context.router
-              .navigateToRoute(errorRoute, { context })
-              .then(() => renderRoute(errorRoute, e));
+            context.head.clear();
+
+            e.addParameters({ route: errorRoute });
+
+            await context.router.navigateToRoute(errorRoute, { context });
+
+            return renderRoute(errorRoute, e);
           }
 
           throw e;

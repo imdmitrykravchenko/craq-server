@@ -3,24 +3,25 @@ import request from 'supertest';
 import { createRegistry } from 'craq';
 
 import createCraqServer from '../createCraqServer';
-import { configureContext, createRedirect, createHttpError } from '../index';
+import { configureContext } from '../index';
 import Router6 from 'router6';
+import { ClientError, Redirect, ServerError } from '../errors';
 
 describe('createCraqServer', () => {
   const nope = (context, error) =>
-    (context.ctx.body = error ? 'Not Okay' : 'Okay');
-  const render404 = (context) => (context.ctx.body = 'I am 404');
+    (context.ctx.body = error ? context.stats : 'Okay');
+  const render404 = (context) => (context.ctx.body = context.stats.error);
   const render5xx = (context, error) => {
     context.ctx.body = error.message;
   };
   const redirectAction = () => {
-    throw createRedirect(302, 'https://xxx.tld');
+    throw new Redirect(302, { location: 'https://xxx.tld' });
   };
   const notFound = () => {
-    throw createHttpError(404, 'Cannot find');
+    throw new ClientError(404, { message: 'Cannot find' });
   };
   const some500 = () => {
-    throw createHttpError(500, 'Clusterfuck');
+    throw new ServerError(500, { message: 'Clusterfuck' });
   };
   const somethingBad = () => {
     x + 2;
@@ -119,11 +120,17 @@ describe('createCraqServer', () => {
     expect(response.headers.location).toBe('https://xxx.tld');
   });
 
+  it('exports stats', async () => {
+    const response = await request(server.callback()).get('/not-found');
+
+    expect(response.status).toBe(404);
+    expect(response.text).toBe('{"message":"Cannot find","statusCode":404}');
+  });
+
   it('404 works', async () => {
     const response = await request(server.callback()).get('/not-found');
 
     expect(response.status).toBe(404);
-    expect(response.text).toBe('I am 404');
   });
 
   it('500 works', async () => {
