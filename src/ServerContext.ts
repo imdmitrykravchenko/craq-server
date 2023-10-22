@@ -19,7 +19,7 @@ export default class ServerContext<S, A, X = KoaContext> extends Context<S, A> {
     }: {
       registries: Registries<S>;
       store: Store<S, A>;
-      router: Router6;
+      router?: Router6;
       ctx: X;
     },
     head: Head,

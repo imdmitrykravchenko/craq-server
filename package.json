@@ -1,6 +1,6 @@
 {
   "name": "craq-server",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,8 @@
   "author": "Dmitry Kravchenko",
   "license": "ISC",
   "dependencies": {
-    "craq": "^0.1.0",
+    "craq": "^0.2.0",
+    "craq-route-actions": "^0.1.0",
     "koa": "^2.13.1",
     "url": "^0.11.0"
   },

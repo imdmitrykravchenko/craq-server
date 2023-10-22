@@ -14,15 +14,19 @@ export default <T, S>({
     actions: Registry<CraqAction<S, any>>;
     components: Registry<T>;
     getStore: () => Store<S, any>;
-    getRouter: () => Router6;
+    getRouter: (context: ServerContext<S, any>) => Router6;
   }) =>
-  <T extends Context>(ctx: T, head: Head) =>
-    new ServerContext(
+  <T extends Context>(ctx: T, head: Head) => {
+    const serverContext = new ServerContext(
       {
         ctx,
         store: getStore(),
-        router: getRouter(),
         registries: { actions, components },
       },
       head,
     );
+
+    serverContext.router = getRouter(serverContext);
+
+    return serverContext;
+  };

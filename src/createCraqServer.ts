@@ -1,7 +1,8 @@
 import url from 'url';
 import Koa, { Context } from 'koa';
 import { Route } from 'router6';
-import { actionsMiddleware } from 'craq';
+import actionsMiddleware from 'craq-route-actions';
+
 import ServerContext from './ServerContext';
 import createHead, { Head } from './createHead';
 import { Redirect, HttpError, ServerError } from './errors';
@@ -60,7 +61,7 @@ const createCraqServer = <S extends object, A>(
         }),
       );
 
-      const renderRoute = (route, err = null) =>
+      const renderRoute = (route: Route, err: Error | null = null) =>
         getRenderer(renderers, route)(context, err);
 
       return context.router
