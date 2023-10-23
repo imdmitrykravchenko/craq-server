@@ -31,7 +31,7 @@ type HeadMeta = {
 
 const formatAttributes = (attributes: Record<string, any>) =>
   Object.entries(attributes)
-    .filter(([_, value]) => value && typeof value === 'string')
+    .filter(([_, value]) => value)
     .reduce((result, [key, value]) => [...result, `${key}="${value}"`], [])
     .join(' ');
 
