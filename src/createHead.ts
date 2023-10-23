@@ -3,11 +3,13 @@ type MetaItem = {
   name?: string;
   property?: string;
   httpEquiv?: string;
+  uniq?: boolean;
 };
 type HeadLink = {
   rel: string;
   href: string;
   attributes?: Record<string, string>;
+  uniq?: boolean;
 };
 type InlineContent = {
   type: 'style' | 'script';
@@ -27,13 +29,29 @@ type HeadMeta = {
   inlines: InlineContent[];
 };
 
-const formatAttributes = (attributes) =>
+const formatAttributes = (attributes: Record<string, any>) =>
   Object.entries(attributes)
-    .filter(([_, value]) => value)
+    .filter(([_, value]) => value && typeof value === 'string')
     .reduce((result, [key, value]) => [...result, `${key}="${value}"`], [])
     .join(' ');
 
-const uniqMetaNames = new Set(['description', 'viewport']);
+const uniqMetaNames = new Set([
+  'description',
+  'viewport',
+  'robots',
+  'keywords',
+  'author',
+]);
+
+const uniqLinkRels = new Set(['canonical']);
+
+const isMetaUniq = (meta: MetaItem) =>
+  uniqMetaNames.has(meta.name) ||
+  meta.uniq ||
+  `${meta.property}`.startsWith('og:') ||
+  `${meta.property}`.startsWith('twitter:');
+const isLinkUniq = (link: HeadLink) => uniqLinkRels.has(link.rel) || link.uniq;
+
 const getInitialMeta = (): HeadMeta => ({
   title: '',
   base: '',
@@ -65,13 +83,16 @@ const createHead = () => {
       headMeta.base = base;
       return head;
     },
-    addMeta: (item: MetaItem) => {
+    setMeta: (item: MetaItem) => {
+      const uniqProp = ['name', 'property', 'httpEquiv'].find(
+        (name) => name in item,
+      );
+
       if (
-        uniqMetaNames.has(item.name) &&
-        headMeta.meta.some(({ name }) => name === item.name)
+        headMeta.meta.some((metaItem) => metaItem[uniqProp] === item[uniqProp])
       ) {
         headMeta.meta = headMeta.meta.map((metaItem) =>
-          metaItem.name === item.name ? item : metaItem,
+          metaItem[uniqProp] === item[uniqProp] ? item : metaItem,
         );
       } else {
         headMeta.meta.push(item);
@@ -79,8 +100,30 @@ const createHead = () => {
 
       return head;
     },
+    addMeta: (item: MetaItem) => {
+      if (isMetaUniq(item)) {
+        return head.setMeta(item);
+      }
+      headMeta.meta.push(item);
+
+      return head;
+    },
+    setLink: (link: HeadLink) => {
+      if (headMeta.links.some((linkItem) => linkItem.rel === link.rel)) {
+        headMeta.links = headMeta.links.map((linkItem) =>
+          linkItem.rel === link.rel ? link : linkItem,
+        );
+      } else {
+        headMeta.links.push(link);
+      }
+      return head;
+    },
     addLink: (link: HeadLink) => {
+      if (isLinkUniq(link)) {
+        return head.setLink(link);
+      }
       headMeta.links.push(link);
+
       return head;
     },
     addScript: (script: HeadScript) => {
@@ -92,6 +135,10 @@ const createHead = () => {
       return head;
     },
     getLang: () => headMeta.lang,
+    setLang: (lang: string) => {
+      headMeta.lang = lang;
+      return head;
+    },
     toString: () =>
       `<head>
           <meta charset="utf-8">

@@ -1,7 +1,7 @@
 {
   "name": "craq-server",
-  "version": "0.2.0",
-  "description": "",
+  "version": "0.2.1",
+  "description": "server side of craq",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
