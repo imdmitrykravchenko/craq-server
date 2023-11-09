@@ -1,6 +1,6 @@
 {
   "name": "craq-server",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "server side of craq",
   "main": "dist/index.js",
   "scripts": {

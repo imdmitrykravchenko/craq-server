@@ -124,7 +124,9 @@ describe('createCraqServer', () => {
     const response = await request(server.callback()).get('/not-found');
 
     expect(response.status).toBe(404);
-    expect(response.text).toBe('{"message":"Cannot find","statusCode":404}');
+    expect(response.text).toBe(
+      '{"route":{"query":{},"params":{},"config":{"renderer":"render404"},"name":"404","path":"/not-found"},"message":"Cannot find","statusCode":404}',
+    );
   });
 
   it('404 works', async () => {

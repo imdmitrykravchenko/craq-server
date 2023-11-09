@@ -37,7 +37,7 @@ const createCraqServer = <S extends object, A>(
 ) => {
   const app = new Koa();
 
-  app.use(async (ctx) => {
+  app.use(async (ctx, next) => {
     if (ctx.path === '/favicon.ico') {
       // TODO: fix that mess
       return;
@@ -103,11 +103,13 @@ const createCraqServer = <S extends object, A>(
         });
     };
 
-    return run().catch((e) => {
-      ctx.status = 500;
-      ctx.set('Content-Type', 'text/html');
-      ctx.body = `<h1>Internal server error</h1><pre>${e.stack}</pre>`;
-    });
+    return next()
+      .then(run)
+      .catch((e) => {
+        ctx.status = 500;
+        ctx.set('Content-Type', 'text/html');
+        ctx.body = `<h1>Internal server error</h1><pre>${e.stack}</pre>`;
+      });
   });
 
   return app;
